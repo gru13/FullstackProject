@@ -6,6 +6,11 @@ const questionTextSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  questionName: {
+    type: String,
+    required: true,
+    trim: true
+  },
   topic: {
     type: String,
     required: true,

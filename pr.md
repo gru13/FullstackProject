@@ -157,6 +157,7 @@ The application will leverage the following MongoDB collections:
 
   ```
   _id: ObjectId
+  questionName: string
   teacherId: ObjectId (refers to users collection where role is 'faculty')
   topic: string
   difficulty: 'easy' | 'medium' | 'hard'

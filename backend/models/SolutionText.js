@@ -5,6 +5,7 @@ const solutionTextSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'QuestionText',
     required: true
+    // questionName will be available via population if needed
   },
   answerCode: {
     type: String,

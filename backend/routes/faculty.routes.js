@@ -28,6 +28,7 @@ router.get('/courses', async (req, res) => {
 router.post('/questions', async (req, res) => {
   try {
     const { 
+      questionName,
       topic, 
       difficulty, 
       marks, 
@@ -41,7 +42,7 @@ router.post('/questions', async (req, res) => {
     } = req.body;
 
     // Validate input
-    if (!topic || !difficulty || !marks || !description || !inputFormat || !outputFormat || !constraints) {
+    if (!questionName || !topic || !difficulty || !marks || !description || !inputFormat || !outputFormat || !constraints) {
       return res.status(400).json({ message: 'Required fields are missing' });
     }
 
@@ -52,6 +53,7 @@ router.post('/questions', async (req, res) => {
     // Create new question
     const question = new QuestionText({
       teacherId: req.user._id,
+      questionName,
       topic,
       difficulty,
       marks,
@@ -95,6 +97,7 @@ router.put('/questions/:id', async (req, res) => {
   try {
     const questionId = req.params.id;
     const { 
+      questionName,
       topic, 
       difficulty, 
       marks, 
@@ -116,8 +119,10 @@ router.put('/questions/:id', async (req, res) => {
     if (question.teacherId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to update this question' });
     }
-
+    console.log(req.body);
+    
     // Update question fields
+    if (questionName !== undefined) question.questionName = questionName;
     if (topic) question.topic = topic;
     if (difficulty) question.difficulty = difficulty;
     if (marks) question.marks = marks;

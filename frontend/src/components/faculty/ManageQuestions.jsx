@@ -3,9 +3,11 @@ import apiService from '../../services/api.service';
 
 const ManageQuestions = () => {
   const [questions, setQuestions] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
+    questionName: '',
     topic: '',
     difficulty: 'easy',
     marks: 0,
@@ -50,6 +52,7 @@ const ManageQuestions = () => {
 
   const resetForm = () => {
     setFormData({
+      questionName: '',
       topic: '',
       difficulty: 'easy',
       marks: 0,
@@ -70,8 +73,8 @@ const ManageQuestions = () => {
     setFormError('');
     setFormSuccess('');
 
-    if (!formData.topic || !formData.description) {
-      setFormError('Topic and description are required');
+    if (!formData.questionName || !formData.topic || !formData.description) {
+      setFormError('Question name, topic and description are required');
       return;
     }
 
@@ -81,6 +84,8 @@ const ManageQuestions = () => {
         sampleInputs: formData.sampleInputs.split('\n').filter(line => line.trim() !== ''),
         sampleOutputs: formData.sampleOutputs.split('\n').filter(line => line.trim() !== '')
       };
+      
+      // console.log(processedData);
 
       if (editMode) {
         await apiService.faculty.updateQuestion(currentQuestionId, processedData);
@@ -99,6 +104,7 @@ const ManageQuestions = () => {
 
   const handleEdit = (question) => {
     setFormData({
+      questionName: question.questionName || '',
       topic: question.topic,
       difficulty: question.difficulty,
       marks: question.marks,
@@ -126,51 +132,79 @@ const ManageQuestions = () => {
       }
     }
   };
-
   return (
-    <div className="p-8 bg-gray-50 min-h-screen"> {/* Updated background color */}
-      <h1 className="text-4xl font-bold mb-10 text-gray-900">Manage Questions</h1> {/* Updated text size and spacing */}
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <h1 className="text-4xl font-bold mb-10  text-gray-900">Manage Questions</h1>
 
-      {/* Question Form */}
-      <div className="bg-white rounded-xl shadow-md p-10 mb-10"> {/* Updated rounded corners and padding */}
+      {/* Form Section */}
+      <div className="bg-white rounded-xl shadow-md p-10 mb-10">
         <h2 className="text-3xl font-semibold mb-8 text-gray-800">{editMode ? 'Edit Question' : 'Create New Question'}</h2>
 
         {formError && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert"> {/* Added rounded corners */}
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert">
             <p>{formError}</p>
           </div>
         )}
 
         {formSuccess && (
-          <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md" role="alert"> {/* Added rounded corners */}
+          <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md" role="alert">
             <p>{formSuccess}</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8"> {/* Increased spacing */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8"> {/* Increased gap */}
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Left Column */}
+          <div className="space-y-6">
             <div>
-              <label className="block text-gray-800 text-lg font-medium mb-2" htmlFor="topic">Topic</label> {/* Updated text size */}
+              <label htmlFor="questionName" className="block text-gray-800 text-lg font-medium mb-1">Question Name</label>
               <input
-                className="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                id="topic"
+                id="questionName"
                 type="text"
+                name="questionName"
+                value={formData.questionName}
+                onChange={handleChange}
+                className="w-full rounded-md border-2 border-gray-300 px-4 py-3 text-gray-800 focus:ring-blue-500 focus:border-blue-500 mb-2"
+                placeholder="Short name or identifier for the question"
+                required
+                autoComplete="off"
+              />
+            </div>
+            {/* ...existing code... */}
+            <div>
+              <label htmlFor="topic" className="block text-gray-800 text-lg font-medium mb-1">Topic</label>
+              <select
+                id="topic"
                 name="topic"
-                placeholder="Topic"
                 value={formData.topic}
                 onChange={handleChange}
-                required
+                className="w-full rounded-md border-2 border-gray-300 px-4 py-3 text-gray-800 focus:ring-blue-500 focus:border-blue-500 mb-2"
+              >
+                <option value="">Choose existing topic or type new below</option>
+                {Array.from(new Set(questions.map(q => q.topic).filter(Boolean))).map((topic) => (
+                  <option key={topic} value={topic}>{topic}</option>
+                ))}
+              </select>
+              <input
+                id="topicInput"
+                type="text"
+                name="topic"
+                value={formData.topic}
+                onChange={handleChange}
+                className="w-full rounded-md border-2 border-gray-300 px-4 py-3 text-gray-800 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Or type a new topic here"
+                autoComplete="off"
               />
             </div>
 
             <div>
-              <label className="block text-gray-800 text-lg font-medium mb-2" htmlFor="difficulty">Difficulty</label> {/* Updated text size */}
+              <label htmlFor="difficulty" className="block text-gray-800 text-lg font-medium mb-1">Difficulty</label>
               <select
-                className="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 id="difficulty"
                 name="difficulty"
                 value={formData.difficulty}
                 onChange={handleChange}
+                required
+                className="w-full rounded-md border-2 border-gray-300 px-4 py-3 text-gray-800 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="easy">Easy</option>
                 <option value="medium">Medium</option>
@@ -179,98 +213,151 @@ const ManageQuestions = () => {
             </div>
 
             <div>
-              <label className="block text-gray-800 text-lg font-medium mb-2" htmlFor="marks">Marks</label> {/* Updated text size */}
+              <label htmlFor="marks" className="block text-gray-800 text-lg font-medium mb-1">Marks</label>
               <input
-                className="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 id="marks"
                 type="number"
                 name="marks"
-                min="0"
+                min="1"
                 max="100"
                 value={formData.marks}
                 onChange={handleChange}
                 required
+                className="w-full rounded-md border-2 border-gray-300 px-4 py-3 text-gray-800 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <label className="block text-gray-800 text-lg font-medium mb-2" htmlFor="description">Description</label> {/* Updated text size */}
-              <textarea
-                className="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent h-32" // Increased height
-                id="description"
-                name="description"
-                placeholder="Problem description"
-                value={formData.description}
+              <label htmlFor="source" className="block text-gray-800 text-lg font-medium mb-1">Source</label>
+              <input
+                id="source"
+                type="text"
+                name="source"
+                value={formData.source}
                 onChange={handleChange}
+                className="w-full rounded-md border-2 border-gray-300 px-4 py-3 text-gray-800 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g. Textbook name, Website"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="inputFormat"  className="block text-gray-800 text-lg font-medium mb-1">Input Format</label>
+              <textarea
+                id="inputFormat"
+                name="inputFormat"
+                value={formData.inputFormat}
+                onChange={handleChange}
+                className="w-full rounded-md border-2 border-gray-300 px-4 py-3 text-gray-800 focus:ring-blue-500 focus:border-blue-500 h-24"
+                placeholder="Describe input format"
                 required
               ></textarea>
             </div>
 
             <div>
-              <label className="block text-gray-800 text-lg font-medium mb-2" htmlFor="constraints">Constraints</label> {/* Updated text size */}
+              <label htmlFor="outputFormat" className="block text-gray-800 text-lg font-medium mb-1">Output Format</label>
               <textarea
-                className="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent h-32" // Increased height
+                id="outputFormat"
+                name="outputFormat"
+                value={formData.outputFormat}
+                onChange={handleChange}
+                className="w-full rounded-md border-2 border-gray-300 px-4 py-3 text-gray-800 focus:ring-blue-500 focus:border-blue-500 h-24"
+                placeholder="Describe output format"
+                required
+              ></textarea>
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+            <div>
+              <label htmlFor="description" className="block text-gray-800 text-lg font-medium mb-1">Description</label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                required
+                className="w-full rounded-md border-2 border-gray-300 px-4 py-3 text-gray-800 focus:ring-blue-500 focus:border-blue-500 h-32"
+                placeholder="Problem description"
+              ></textarea>
+            </div>
+
+            <div>
+              <label htmlFor="constraints" className="block text-gray-800 text-lg font-medium mb-1">Constraints</label>
+              <textarea
                 id="constraints"
                 name="constraints"
-                placeholder="Constraints"
                 value={formData.constraints}
                 onChange={handleChange}
+                required
+                className="w-full rounded-md border-2 border-gray-300 px-4 py-3 text-gray-800 focus:ring-blue-500 focus:border-blue-500 h-32"
+                placeholder="Constraints"
               ></textarea>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <label className="block text-gray-800 text-lg font-medium mb-2" htmlFor="sampleInputs">Sample Input</label> {/* Updated text size */}
+              <label htmlFor="sampleInputs" className="block text-gray-800 text-lg font-medium mb-1">Sample Inputs</label>
               <textarea
-                className="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent h-32" // Increased height
                 id="sampleInputs"
                 name="sampleInputs"
-                placeholder="Sample inputs (one per line)"
                 value={formData.sampleInputs}
                 onChange={handleChange}
+                required
+                className="w-full rounded-md border-2 border-gray-300 px-4 py-3 text-gray-800 focus:ring-blue-500 focus:border-blue-500 h-28"
+                placeholder="One input per line"
               ></textarea>
             </div>
 
             <div>
-              <label className="block text-gray-800 text-lg font-medium mb-2" htmlFor="sampleOutputs">Sample Output</label> {/* Updated text size */}
+              <label htmlFor="sampleOutputs" className="block text-gray-800 text-lg font-medium mb-1">Sample Outputs</label>
               <textarea
-                className="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent h-32" // Increased height
                 id="sampleOutputs"
                 name="sampleOutputs"
-                placeholder="Sample outputs (one per line)"
                 value={formData.sampleOutputs}
                 onChange={handleChange}
+                required
+                className="w-full rounded-md border-2 border-gray-300 px-4 py-3 text-gray-800 focus:ring-blue-500 focus:border-blue-500 h-28"
+                placeholder="One output per line"
               ></textarea>
             </div>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <button
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 shadow-md"
-              type="submit"
-            >
-              {editMode ? 'Update Question' : 'Create Question'}
-            </button>
-
-            {editMode && (
+            <div className="flex items-center gap-4 pt-4">
               <button
-                className="ml-4 bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-150 shadow-md"
-                type="button"
-                onClick={resetForm}
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700  text-white font-semibold py-3 px-6 rounded-md shadow focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               >
-                Cancel
+                {editMode ? 'Update Question' : 'Create Question'}
               </button>
-            )}
+              {editMode && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className=" bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-md shadow focus:outline-none focus:ring-2 focus:ring-gray-500 transition"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </div>
 
-      {/* Questions List */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden"> {/* Updated rounded corners */}
-        <h2 className="text-3xl font-semibold p-8 border-b border-gray-200 bg-gray-50 text-gray-800">Questions List</h2> {/* Updated spacing and background color */}
+      {/* Questions Table */}
+      <div className="bg-white rounded-xl shadow-md overflow-hidden">
+        <h2 className="text-3xl font-semibold p-8 border-b border-gray-200 bg-gray-50 text-gray-800">Questions List</h2>
+
+        {/* Search Bar */}
+        <div className="px-8 pt-6 pb-2 bg-gray-50 flex items-center gap-4">
+          <input
+            type="text"
+            className="w-full md:w-1/3 rounded-md border-2 border-gray-300 px-4 py-2 text-gray-800 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Search by name, topic, or difficulty..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            autoComplete="off"
+          />
+        </div>
 
         {loading ? (
           <div className="flex justify-center items-center h-64">
@@ -283,47 +370,55 @@ const ManageQuestions = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50"> {/* Updated background color */}
+              <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-4 text-left text-sm font-medium text-gray-800 uppercase tracking-wider">Topic</th> {/* Updated text size */}
-                  <th scope="col" className="px-6 py-4 text-left text-sm font-medium text-gray-800 uppercase tracking-wider">Difficulty</th> {/* Updated text size */}
-                  <th scope="col" className="px-6 py-4 text-left text-sm font-medium text-gray-800 uppercase tracking-wider">Marks</th> {/* Updated text size */}
-                  <th scope="col" className="px-6 py-4 text-left text-sm font-medium text-gray-800 uppercase tracking-wider">Actions</th> {/* Updated text size */}
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-800 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-800 uppercase tracking-wider">Topic</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-800 uppercase tracking-wider">Difficulty</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-800 uppercase tracking-wider">Marks</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-800 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {questions.map((question) => (
-                  <tr key={question._id} className="hover:bg-gray-100 transition duration-150"> {/* Updated hover effect */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{question.topic}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${question.difficulty === 'easy' ? 'bg-green-100 text-green-800' : 
-                          question.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
-                          'bg-red-100 text-red-800'}`}>
-                        {question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{question.marks}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-4">
-                      <button
-                        onClick={() => handleEdit(question)}
-                        className="text-indigo-600 hover:text-indigo-900 flex items-center space-x-1"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(question._id)}
-                        className="text-red-600 hover:text-red-900 flex items-center space-x-1"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {questions
+                  .filter(q => {
+                    if (!searchTerm.trim()) return true;
+                    const term = searchTerm.trim().toLowerCase();
+                    return (
+                      (q.questionName && q.questionName.toLowerCase().includes(term)) ||
+                      (q.topic && q.topic.toLowerCase().includes(term)) ||
+                      (q.difficulty && q.difficulty.toLowerCase().includes(term))
+                    );
+                  })
+                  .map((question) => (
+                    <tr key={question._id} className="hover:bg-gray-100 transition duration-150">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{question.questionName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{question.topic}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        ${question.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
+                            question.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'}`}>
+                          {question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{question.marks}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-4">
+                        <button
+                          onClick={() => handleEdit(question)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(question._id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

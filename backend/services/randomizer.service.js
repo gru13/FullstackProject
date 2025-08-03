@@ -20,17 +20,17 @@ const randomizerService = {
       const easyQuestions = await QuestionText.find({ 
         teacherId, 
         difficulty: 'easy' 
-      });
+      }).select('+questionName');
       
       const mediumQuestions = await QuestionText.find({ 
         teacherId, 
         difficulty: 'medium' 
-      });
+      }).select('+questionName');
       
       const hardQuestions = await QuestionText.find({ 
         teacherId, 
         difficulty: 'hard' 
-      });
+      }).select('+questionName');
 
       // Check if we have enough questions of each difficulty
       if (easyQuestions.length < difficultyDistribution.easy) {

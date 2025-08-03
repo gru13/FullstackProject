@@ -43,6 +43,7 @@ const assignmentSchema = new mongoose.Schema({
       questionIds: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'QuestionText'
+        // questionName will be available via population if needed
       }],
       seed: String
     },
