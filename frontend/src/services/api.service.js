@@ -86,10 +86,16 @@ const apiService = {
     createAssignment: (assignmentData) => apiClient.post('/faculty/assignments', assignmentData),
     getAssignments: () => apiClient.get('/faculty/assignments'),
     getAssignment: (id) => apiClient.get(`/faculty/assignments/${id}`),
-    previewAssignmentPdf: (assignmentId, studentId) => 
+    previewAssignmentPDF: (assignmentId, studentId) => 
       apiClient.get(`/faculty/assignments/${assignmentId}/preview/${studentId}`, { responseType: 'blob' }),
     emailAssignmentToStudents: (assignmentId) => 
-      apiClient.post(`/faculty/assignments/${assignmentId}/email`)
+      apiClient.post(`/faculty/assignments/${assignmentId}/email`),
+    emailAssignment: (assignmentId) => 
+      apiClient.post(`/faculty/assignments/${assignmentId}/email`),
+    emailAssignmentToStudent: (assignmentId, studentId) => 
+      apiClient.post(`/faculty/assignments/${assignmentId}/email/${studentId}`),
+    deleteAssignment: (id) => apiClient.delete(`/faculty/assignments/${id}`),
+    updateAssignment: (id, assignmentData) => apiClient.put(`/faculty/assignments/${id}`, assignmentData)
   },
   
   // Student endpoints
@@ -119,7 +125,8 @@ const apiService = {
   auth: {
     login: (credentials) => apiClient.post('/auth/login', credentials),
     getCurrentUser: () => apiClient.get('/auth/me'),
-    changePassword: (passwordData) => apiClient.post('/auth/change-password', passwordData)
+    changePassword: (passwordData) => apiClient.post('/auth/change-password', passwordData),
+    changeAppPassword: (appPasswordData) => apiClient.post('/auth/change-app-password', appPasswordData)
   }
 };
 

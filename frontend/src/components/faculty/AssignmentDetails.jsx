@@ -165,11 +165,14 @@ const AssignmentDetails = () => {
             <p className="text-gray-600 mb-2">
               <span className="font-semibold">Total Marks:</span> {assignment.totalMarks}
             </p>
+            <p className="text-gray-600 mb-2">
+              <span className="font-semibold">Topic:</span> {assignment.topic}
+            </p>
             <p className="text-gray-600 mb-4">
-              <span className="font-semibold">Difficulty Distribution:</span> 
-              Easy: {assignment.difficultyDistribution?.easy || 0}%, 
-              Medium: {assignment.difficultyDistribution?.medium || 0}%, 
-              Hard: {assignment.difficultyDistribution?.hard || 0}%
+              <span className="font-semibold">Questions:</span> 
+              Easy: {assignment.easyCount}, 
+              Medium: {assignment.mediumCount}, 
+              Hard: {assignment.hardCount}
             </p>
           </div>
           <div>
@@ -193,8 +196,8 @@ const AssignmentDetails = () => {
       {/* Students List */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <h2 className="text-xl font-semibold p-6 border-b">Students</h2>
-        {console.log('Students:', students)}
-        {console.log('Assignment:', assignment)}
+        {/* {console.log('Students:', students)}
+        {console.log('Assignment:', assignment)} */}
         {students.length === 0 ? (
           <div className="p-6 text-center text-gray-500">No students assigned to this course</div>
         ) : (

@@ -83,13 +83,13 @@ const Profile = () => {
     setFormError('');
     setFormSuccess('');
 
-    if (!appPasswordData.currentAppPassword || !appPasswordData.newAppPassword) {
-      setFormError('All fields are required for app password update');
+    if (!appPasswordData.newAppPassword) {
+      setFormError('App password is required');
       return;
     }
 
     try {
-      await apiService.auth.changeAppPassword(appPasswordData);
+      await apiService.auth.changeAppPassword({ newAppPassword: appPasswordData.newAppPassword });
       setFormSuccess('App password updated successfully');
       setAppPasswordData({
         currentAppPassword: '',
@@ -97,9 +97,11 @@ const Profile = () => {
       });
     } catch (err) {
       console.error('Error updating app password:', err);
-      setFormError(err.response?.data?.message || 'Failed to update app password. Please ensure the current app password is correct and try again.');
+      setFormError(err.response?.data?.message || 'Failed to update app password.');
     }
   };
+
+  console.log('User Profile:', userProfile);
 
   return (
     <div>
@@ -144,6 +146,10 @@ const Profile = () => {
               <p className="text-gray-600 text-sm">Role</p>
               <p className="text-gray-900 font-medium capitalize">{userProfile.role}</p>
             </div>
+           <div>
+             <p className="text-gray-600 text-sm">Gmail App Password</p>
+             <p className="text-gray-900 font-medium">{userProfile.appPassword || 'Not set'}</p>
+           </div>
           </div>
         ) : (
           <p className="text-gray-500">Unable to load profile information</p>
@@ -216,24 +222,8 @@ const Profile = () => {
 
       {/* App Password Change Form */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Change App Password</h2>
+        <h2 className="text-xl font-semibold mb-4">Set App Password</h2>
         <form onSubmit={handleAppPasswordSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="currentAppPassword">
-              Current App Password
-            </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="currentAppPassword"
-              type="password"
-              name="currentAppPassword"
-              placeholder="Current App Password"
-              value={appPasswordData.currentAppPassword}
-              onChange={handleAppPasswordChange}
-              required
-            />
-          </div>
-
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="newAppPassword">
               New App Password
@@ -241,7 +231,6 @@ const Profile = () => {
             <input
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               id="newAppPassword"
-              type="password"
               name="newAppPassword"
               placeholder="New App Password"
               value={appPasswordData.newAppPassword}
@@ -249,13 +238,12 @@ const Profile = () => {
               required
             />
           </div>
-
           <div className="flex items-center justify-between">
             <button
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               type="submit"
             >
-              Update App Password
+              Set App Password
             </button>
           </div>
         </form>

@@ -97,7 +97,7 @@ const ManageCourses = () => {
               <div className="mb-3">
                 <h3 className="text-sm font-medium text-gray-700 mb-1">Quick Actions</h3>
                 <Link
-                  to={`/faculty/assignments/new?courseId=${course._id}`}
+                  to={`/faculty/assignments?courseId=${course._id}`}
                   className="text-sm bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md"
                 >
                   + Create Assignment

@@ -23,19 +23,22 @@ const assignmentSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  difficultyDistribution: {
-    easy: {
-      type: Number,
-      required: true
-    },
-    medium: {
-      type: Number,
-      required: true
-    },
-    hard: {
-      type: Number,
-      required: true
-    }
+  topic: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  easyCount: {
+    type: Number,
+    required: true
+  },
+  mediumCount: {
+    type: Number,
+    required: true
+  },
+  hardCount: {
+    type: Number,
+    required: true
   },
   students: {
     type: Map,

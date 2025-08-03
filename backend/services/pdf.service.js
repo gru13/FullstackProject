@@ -27,75 +27,87 @@ const pdfService = {
         });
 
         // Add header
-        doc.fontSize(20).text('Assignment', { align: 'center' });
-        doc.moveDown();
+        doc.fontSize(22).fillColor('#1a202c').text('Assignment', { align: 'center', underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(16).fillColor('#2b6cb0').text(assignment.name, { align: 'center', underline: false });
+        doc.moveDown(0.5);
+        doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+        doc.moveDown(1);
 
-        // Add assignment details
-        doc.fontSize(16).text(assignment.name, { align: 'center' });
-        doc.moveDown();
+        // Assignment topic and description
+        doc.fontSize(13).fillColor('black').text(`Topic: `, { continued: true }).font('Helvetica-Bold').text(assignment.topic || 'N/A', { continued: false });
+        doc.font('Helvetica').fontSize(13).text(`Description: `, { continued: true }).font('Helvetica-Bold').text(assignment.description || 'No description provided', { continued: false });
+        doc.moveDown(1);
+        doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+        doc.moveDown(1);
 
         // Add course and student info
-        doc.fontSize(12);
-        doc.text(`Course: ${course.courseName}`);
-        doc.text(`Due Date: ${new Date(assignment.dueDate).toLocaleDateString()}`);
-        doc.text(`Total Marks: ${assignment.totalMarks}`);
-        doc.moveDown();
-
-        doc.text(`Student Name: ${student.name}`);
-        doc.text(`Roll Number: ${student.rollNumber}`);
-        doc.moveDown();
+        doc.font('Helvetica').fontSize(12).fillColor('black');
+        doc.text(`Course: `, { continued: true }).font('Helvetica-Bold').text(course.courseName, { continued: false });
+        doc.font('Helvetica').text(`Due Date: `, { continued: true }).font('Helvetica-Bold').text(new Date(assignment.dueDate).toLocaleDateString(), { continued: false });
+        doc.font('Helvetica').text(`Total Marks: `, { continued: true }).font('Helvetica-Bold').text(assignment.totalMarks, { continued: false });
+        doc.moveDown(0.5);
+        doc.font('Helvetica').text(`Student Name: `, { continued: true }).font('Helvetica-Bold').text(student.name, { continued: false });
+        doc.font('Helvetica').text(`Roll Number: `, { continued: true }).font('Helvetica-Bold').text(student.rollNumber, { continued: false });
+        doc.moveDown(1);
+        doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+        doc.moveDown(1);
 
         // Add questions
-        doc.fontSize(14).text('Questions', { underline: true });
-        doc.moveDown();
+        doc.fontSize(15).fillColor('#2b6cb0').text('Questions', { underline: true });
+        doc.moveDown(0.5);
 
         let totalMarks = 0;
 
         questions.forEach((question, index) => {
-          // Question number and marks
-          doc.fontSize(12).text(`Question ${index + 1} (${question.difficulty} - ${question.marks} marks)`, { underline: true });
+          // Question header
+          doc.fontSize(13).fillColor('#1a202c').font('Helvetica-Bold').text(`Question ${index + 1}:`, { underline: true });
+          doc.fontSize(12).fillColor('black').font('Helvetica').text(`Difficulty: `, { continued: true }).font('Helvetica-Bold').text(question.difficulty, { continued: true }).font('Helvetica').text(`   Marks: `, { continued: true }).font('Helvetica-Bold').text(question.marks, { continued: false });
           doc.moveDown(0.5);
 
           // Description
-          doc.fontSize(11).text(question.description);
+          doc.fontSize(11).font('Helvetica').text('Description:', { bold: true });
+          doc.fontSize(11).font('Helvetica-Bold').text(question.description);
           doc.moveDown(0.5);
 
           // Input format
-          doc.fontSize(10).text('Input Format:', { bold: true });
-          doc.fontSize(10).text(question.inputFormat);
+          doc.fontSize(10).font('Helvetica').text('Input Format:', { bold: true });
+          doc.fontSize(10).font('Helvetica-Bold').text(question.inputFormat);
           doc.moveDown(0.5);
 
           // Output format
-          doc.fontSize(10).text('Output Format:', { bold: true });
-          doc.fontSize(10).text(question.outputFormat);
+          doc.fontSize(10).font('Helvetica').text('Output Format:', { bold: true });
+          doc.fontSize(10).font('Helvetica-Bold').text(question.outputFormat);
           doc.moveDown(0.5);
 
           // Constraints
-          doc.fontSize(10).text('Constraints:', { bold: true });
-          doc.fontSize(10).text(question.constraints);
+          doc.fontSize(10).font('Helvetica').text('Constraints:', { bold: true });
+          doc.fontSize(10).font('Helvetica-Bold').text(question.constraints);
           doc.moveDown(0.5);
 
           // Sample inputs and outputs
-          doc.fontSize(10).text('Sample Test Cases:', { bold: true });
+          doc.fontSize(10).font('Helvetica').text('Sample Test Cases:', { bold: true });
           for (let i = 0; i < question.sampleInputs.length; i++) {
-            doc.fontSize(10).text(`Sample Input ${i + 1}:`, { italic: true });
-            doc.fontSize(9).text(question.sampleInputs[i]);
-            doc.fontSize(10).text(`Sample Output ${i + 1}:`, { italic: true });
-            doc.fontSize(9).text(question.sampleOutputs[i]);
+            doc.fontSize(10).font('Helvetica').text(`Sample Input ${i + 1}:`, { italic: true });
+            doc.fontSize(9).font('Helvetica-Bold').text(question.sampleInputs[i]);
+            doc.fontSize(10).font('Helvetica').text(`Sample Output ${i + 1}:`, { italic: true });
+            doc.fontSize(9).font('Helvetica-Bold').text(question.sampleOutputs[i]);
             doc.moveDown(0.5);
           }
 
           totalMarks += question.marks;
-          doc.moveDown();
+          doc.moveDown(1);
 
-          // Add a page break after each question except the last one
+          // Add a line after each question except the last one
           if (index < questions.length - 1) {
+            doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
             doc.addPage();
           }
         });
 
         // Add footer with total marks
-        doc.fontSize(12).text(`Total Marks: ${totalMarks}`, { align: 'right' });
+        doc.moveDown(1);
+        doc.fontSize(12).fillColor('#2b6cb0').font('Helvetica-Bold').text(`Total Marks: ${totalMarks}`, { align: 'right' });
 
         // Finalize the PDF
         doc.end();

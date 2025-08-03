@@ -14,15 +14,16 @@ const ManageAssignments = () => {
     dueDate: '',
     courseId: '',
     totalMarks: 100,
-    difficultyDistribution: {
-      easy: 30,
-      medium: 40,
-      hard: 30
-    }
+    topic: '',
+    easyCount: 0,
+    mediumCount: 0,
+    hardCount: 0
   });
+  const [topics, setTopics] = useState([]);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
-  const [emailStatus, setEmailStatus] = useState({});
+  const [editMode, setEditMode] = useState(false);
+  const [currentAssignmentId, setCurrentAssignmentId] = useState(null);
 
   // Fetch assignments and courses
   const fetchData = async () => {
@@ -45,26 +46,27 @@ const ManageAssignments = () => {
 
   useEffect(() => {
     fetchData();
+    // Fetch topics from questions
+    const fetchTopics = async () => {
+      try {
+        const response = await apiService.faculty.getQuestions();
+        const uniqueTopics = Array.from(new Set(response.data.map(q => q.topic).filter(Boolean)));
+        setTopics(uniqueTopics);
+      } catch (err) {
+        console.error('Error fetching topics:', err);
+        setTopics([]);
+      }
+    };
+    fetchTopics();
   }, []);
 
   // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name.startsWith('difficulty.')) {
-      const difficulty = name.split('.')[1];
-      setFormData({
-        ...formData,
-        difficultyDistribution: {
-          ...formData.difficultyDistribution,
-          [difficulty]: parseInt(value, 10)
-        }
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
-    }
+    setFormData({
+      ...formData,
+      [name]: name.endsWith('Count') ? parseInt(value, 10) : value
+    });
   };
 
   // Handle form submission
@@ -79,10 +81,17 @@ const ManageAssignments = () => {
       return;
     }
 
-    // Validate difficulty distribution adds up to 100%
-    const { easy, medium, hard } = formData.difficultyDistribution;
-    if (easy + medium + hard !== 100) {
-      setFormError('Difficulty distribution must add up to 100%');
+    // Validate question counts
+    if (formData.easyCount < 0 || formData.mediumCount < 0 || formData.hardCount < 0) {
+      setFormError('Question counts must be non-negative');
+      return;
+    }
+    if (!formData.topic) {
+      setFormError('Topic is required');
+      return;
+    }
+    if (formData.easyCount + formData.mediumCount + formData.hardCount === 0) {
+      setFormError('Specify at least one question');
       return;
     }
 
@@ -95,11 +104,10 @@ const ManageAssignments = () => {
         dueDate: '',
         courseId: '',
         totalMarks: 100,
-        difficultyDistribution: {
-          easy: 30,
-          medium: 40,
-          hard: 30
-        }
+        topic: '',
+        easyCount: 0,
+        mediumCount: 0,
+        hardCount: 0
       });
       fetchData(); // Refresh assignments list
     } catch (err) {
@@ -122,46 +130,49 @@ const ManageAssignments = () => {
     }
   };
 
-  // Handle preview PDF
-  const handlePreviewPDF = async (assignmentId, studentId) => {
-    try {
-      const response = await apiService.faculty.previewAssignmentPDF(assignmentId, studentId);
-      // Create a blob from the PDF data
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      // Open the PDF in a new tab
-      window.open(url, '_blank');
-    } catch (err) {
-      console.error('Error previewing PDF:', err);
-      alert('Failed to preview PDF. Please try again.');
-    }
+
+  // Populate form for editing
+  const handleEdit = (assignment) => {
+    setEditMode(true);
+    setCurrentAssignmentId(assignment._id);
+    setFormData({
+      name: assignment.name,
+      description: assignment.description,
+      dueDate: assignment.dueDate ? assignment.dueDate.slice(0, 10) : '',
+      courseId: assignment.courseId._id || assignment.courseId,
+      topic: assignment.topic,
+      easyCount: assignment.easyCount,
+      mediumCount: assignment.mediumCount,
+      hardCount: assignment.hardCount,
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Handle email assignment
-  const handleEmailAssignment = async (assignmentId) => {
-    if (window.confirm('Are you sure you want to email this assignment to all students?')) {
-      try {
-        setEmailStatus(prev => ({ ...prev, [assignmentId]: 'sending' }));
-        await apiService.faculty.emailAssignment(assignmentId);
-        setEmailStatus(prev => ({ ...prev, [assignmentId]: 'success' }));
-        setTimeout(() => {
-          setEmailStatus(prev => {
-            const newStatus = { ...prev };
-            delete newStatus[assignmentId];
-            return newStatus;
-          });
-        }, 5000); // Clear status after 5 seconds
-      } catch (err) {
-        console.error('Error emailing assignment:', err);
-        setEmailStatus(prev => ({ ...prev, [assignmentId]: 'error' }));
-        setTimeout(() => {
-          setEmailStatus(prev => {
-            const newStatus = { ...prev };
-            delete newStatus[assignmentId];
-            return newStatus;
-          });
-        }, 5000); // Clear status after 5 seconds
-      }
+  // Update assignment
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    setFormSuccess('');
+    if (!currentAssignmentId) return;
+    try {
+      await apiService.faculty.updateAssignment(currentAssignmentId, formData);
+      setFormSuccess('Assignment updated successfully');
+      setEditMode(false);
+      setCurrentAssignmentId(null);
+      setFormData({
+        name: '',
+        description: '',
+        dueDate: '',
+        courseId: '',
+        topic: '',
+        easyCount: 0,
+        mediumCount: 0,
+        hardCount: 0,
+      });
+      fetchData();
+    } catch (err) {
+      console.error('Error updating assignment:', err);
+      setFormError(err.response?.data?.message || 'Failed to update assignment');
     }
   };
 
@@ -191,7 +202,7 @@ const ManageAssignments = () => {
 
       {/* Assignment Form */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Create New Assignment</h2>
+        <h2 className="text-xl font-semibold mb-4">{editMode ? 'Edit Assignment' : 'Create New Assignment'}</h2>
         
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -210,7 +221,6 @@ const ManageAssignments = () => {
                 required
               />
             </div>
-            
             <div>
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="courseId">
                 Course
@@ -231,6 +241,32 @@ const ManageAssignments = () => {
                 ))}
               </select>
             </div>
+          </div>
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="topic">
+              Topic
+            </label>
+            <select
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="topic"
+              name="topic"
+              value={formData.topic}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select a topic</option>
+              {topics.map(topic => (
+                <option key={topic} value={topic}>{topic}</option>
+              ))}
+            </select>
+            <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mt-2"
+              type="text"
+              name="topic"
+              placeholder="Or type a new topic"
+              value={formData.topic}
+              onChange={handleChange}
+            />
           </div>
           
           <div className="mb-6">
@@ -263,82 +299,62 @@ const ManageAssignments = () => {
               />
             </div>
             
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="totalMarks">
-                Total Marks
-              </label>
-              <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                id="totalMarks"
-                type="number"
-                name="totalMarks"
-                min="1"
-                max="1000"
-                value={formData.totalMarks}
-                onChange={handleChange}
-                required
-              />
-            </div>
+            {/* Total Marks field removed. It will be calculated automatically based on selected questions. */}
           </div>
           
           <div className="mb-6">
             <label className="block text-gray-700 text-sm font-bold mb-2">
-              Difficulty Distribution (must add up to 100%)
+              Number of Questions by Difficulty
             </label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-gray-700 text-sm mb-1" htmlFor="difficulty.easy">
-                  Easy (%)
+                <label className="block text-gray-700 text-sm mb-1" htmlFor="easyCount">
+                  Easy
                 </label>
                 <input
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  id="difficulty.easy"
+                  id="easyCount"
                   type="number"
-                  name="difficulty.easy"
+                  name="easyCount"
                   min="0"
-                  max="100"
-                  value={formData.difficultyDistribution.easy}
+                  value={formData.easyCount}
                   onChange={handleChange}
                   required
                 />
               </div>
-              
               <div>
-                <label className="block text-gray-700 text-sm mb-1" htmlFor="difficulty.medium">
-                  Medium (%)
+                <label className="block text-gray-700 text-sm mb-1" htmlFor="mediumCount">
+                  Medium
                 </label>
                 <input
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  id="difficulty.medium"
+                  id="mediumCount"
                   type="number"
-                  name="difficulty.medium"
+                  name="mediumCount"
                   min="0"
-                  max="100"
-                  value={formData.difficultyDistribution.medium}
+                  value={formData.mediumCount}
                   onChange={handleChange}
                   required
                 />
               </div>
-              
               <div>
-                <label className="block text-gray-700 text-sm mb-1" htmlFor="difficulty.hard">
-                  Hard (%)
+                <label className="block text-gray-700 text-sm mb-1" htmlFor="hardCount">
+                  Hard
                 </label>
                 <input
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  id="difficulty.hard"
+                  id="hardCount"
                   type="number"
-                  name="difficulty.hard"
+                  name="hardCount"
                   min="0"
-                  max="100"
-                  value={formData.difficultyDistribution.hard}
+                  value={formData.hardCount}
                   onChange={handleChange}
                   required
                 />
               </div>
             </div>
             <p className="text-sm text-gray-500 mt-2">
-              Total: {formData.difficultyDistribution.easy + formData.difficultyDistribution.medium + formData.difficultyDistribution.hard}%
+              Total: {formData.easyCount + formData.mediumCount + formData.hardCount} questions
             </p>
           </div>
           
@@ -346,9 +362,32 @@ const ManageAssignments = () => {
             <button
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               type="submit"
+              onClick={editMode ? handleUpdate : handleSubmit}
             >
-              Create Assignment
+              {editMode ? 'Update Assignment' : 'Create Assignment'}
             </button>
+            {editMode && (
+              <button
+                type="button"
+                className="ml-4 bg-gray-400 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                onClick={() => {
+                  setEditMode(false);
+                  setCurrentAssignmentId(null);
+                  setFormData({
+                    name: '',
+                    description: '',
+                    dueDate: '',
+                    courseId: '',
+                    topic: '',
+                    easyCount: 0,
+                    mediumCount: 0,
+                    hardCount: 0,
+                  });
+                }}
+              >
+                Cancel
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -379,9 +418,7 @@ const ManageAssignments = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Due Date
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Marks
-                  </th>
+                  {/* Total Marks column removed as requested */}
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
@@ -402,9 +439,7 @@ const ManageAssignments = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">{formatDate(assignment.dueDate)}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{assignment.totalMarks}</div>
-                      </td>
+                      {/* Total Marks cell removed as requested */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => navigate(`/faculty/assignments/${assignment._id}`)}
@@ -413,19 +448,10 @@ const ManageAssignments = () => {
                           View
                         </button>
                         <button
-                          onClick={() => handlePreviewPDF(assignment._id)}
-                          className="text-green-600 hover:text-green-900 mr-4"
+                          onClick={() => handleEdit(assignment)}
+                          className='text-yellow-600 hover:text-yellow-900 mr-4'
                         >
-                          Preview PDF
-                        </button>
-                        <button
-                          onClick={() => handleEmailAssignment(assignment._id)}
-                          className="text-blue-600 hover:text-blue-900 mr-4"
-                          disabled={emailStatus[assignment._id] === 'sending'}
-                        >
-                          {emailStatus[assignment._id] === 'sending' ? 'Sending...' :
-                           emailStatus[assignment._id] === 'success' ? 'Sent!' :
-                           emailStatus[assignment._id] === 'error' ? 'Failed!' : 'Email'}
+                          Edit
                         </button>
                         <button
                           onClick={() => handleDelete(assignment._id)}

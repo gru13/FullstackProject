@@ -47,17 +47,6 @@ userSchema.pre('save', async function(next) {
 });
 
 // Hash appPassword before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('appPassword')) return next();
-
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.appPassword = await bcrypt.hash(this.appPassword, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
 
 // Method to compare password
 userSchema.methods.comparePassword = async function(candidatePassword) {

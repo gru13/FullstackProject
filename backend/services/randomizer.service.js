@@ -11,38 +11,39 @@ const randomizerService = {
    * @param {Object} difficultyDistribution - Object with counts for easy, medium, and hard questions
    * @returns {Promise<Array>} - Array of selected question objects
    */
-  selectQuestionsForStudent: async (teacherId, studentId, difficultyDistribution) => {
+  selectQuestionsForStudent: async (teacherId, studentId, difficultyDistribution, topic) => {
     try {
       // Create a seed based on student ID and current timestamp
       const seed = `${Date.now()}-${studentId}`;
-      
-      // Get questions by difficulty
-      const easyQuestions = await QuestionText.find({ 
-        teacherId, 
-        difficulty: 'easy' 
+
+      // Get questions by difficulty and topic
+      const easyQuestions = await QuestionText.find({
+        teacherId,
+        difficulty: 'easy',
+        topic
       }).select('+questionName');
-      
-      const mediumQuestions = await QuestionText.find({ 
-        teacherId, 
-        difficulty: 'medium' 
+
+      const mediumQuestions = await QuestionText.find({
+        teacherId,
+        difficulty: 'medium',
+        topic
       }).select('+questionName');
-      
-      const hardQuestions = await QuestionText.find({ 
-        teacherId, 
-        difficulty: 'hard' 
+
+      const hardQuestions = await QuestionText.find({
+        teacherId,
+        difficulty: 'hard',
+        topic
       }).select('+questionName');
 
       // Check if we have enough questions of each difficulty
       if (easyQuestions.length < difficultyDistribution.easy) {
-        throw new Error(`Not enough easy questions. Required: ${difficultyDistribution.easy}, Available: ${easyQuestions.length}`);
+        throw new Error(`Not enough easy questions for topic '${topic}'. Required: ${difficultyDistribution.easy}, Available: ${easyQuestions.length}`);
       }
-      
       if (mediumQuestions.length < difficultyDistribution.medium) {
-        throw new Error(`Not enough medium questions. Required: ${difficultyDistribution.medium}, Available: ${mediumQuestions.length}`);
+        throw new Error(`Not enough medium questions for topic '${topic}'. Required: ${difficultyDistribution.medium}, Available: ${mediumQuestions.length}`);
       }
-      
       if (hardQuestions.length < difficultyDistribution.hard) {
-        throw new Error(`Not enough hard questions. Required: ${difficultyDistribution.hard}, Available: ${hardQuestions.length}`);
+        throw new Error(`Not enough hard questions for topic '${topic}'. Required: ${difficultyDistribution.hard}, Available: ${hardQuestions.length}`);
       }
 
       // Helper function to shuffle array using the seed
@@ -51,7 +52,6 @@ const randomizerService = {
           const x = Math.sin(parseInt(seed, 36)) * 10000;
           return Math.floor((x - Math.floor(x)) * max);
         };
-
         const shuffled = [...array];
         for (let i = shuffled.length - 1; i > 0; i--) {
           const j = seededRandom(i + 1);
@@ -61,14 +61,9 @@ const randomizerService = {
       };
 
       // Shuffle and select questions based on difficulty distribution
-      const selectedEasy = shuffleArray(easyQuestions, seed + '-easy')
-        .slice(0, difficultyDistribution.easy);
-      
-      const selectedMedium = shuffleArray(mediumQuestions, seed + '-medium')
-        .slice(0, difficultyDistribution.medium);
-      
-      const selectedHard = shuffleArray(hardQuestions, seed + '-hard')
-        .slice(0, difficultyDistribution.hard);
+      const selectedEasy = shuffleArray(easyQuestions, seed + '-easy').slice(0, difficultyDistribution.easy);
+      const selectedMedium = shuffleArray(mediumQuestions, seed + '-medium').slice(0, difficultyDistribution.medium);
+      const selectedHard = shuffleArray(hardQuestions, seed + '-hard').slice(0, difficultyDistribution.hard);
 
       // Combine all selected questions
       return [...selectedEasy, ...selectedMedium, ...selectedHard];

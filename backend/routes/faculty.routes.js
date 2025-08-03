@@ -1,6 +1,7 @@
 const express = require("express");
 const QuestionText = require("../models/QuestionText");
 const Course = require("../models/Course");
+const Student = require("../models/Student")
 const Assignment = require("../models/Assignment");
 const { auth, isFaculty } = require("../middleware/auth");
 const pdfService = require("../services/pdf.service");
@@ -25,6 +26,7 @@ router.get("/courses", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // Get a single course by ID for faculty
 router.get("/courses/:id", async (req, res) => {
@@ -222,7 +224,10 @@ router.post("/assignments", async (req, res) => {
       dueDate,
       courseId,
       totalMarks,
-      difficultyDistribution,
+      topic,
+      easyCount,
+      mediumCount,
+      hardCount,
     } = req.body;
 
     // Validate input
@@ -232,7 +237,10 @@ router.post("/assignments", async (req, res) => {
       !dueDate ||
       !courseId ||
       !totalMarks ||
-      !difficultyDistribution
+      !topic ||
+      easyCount === undefined ||
+      mediumCount === undefined ||
+      hardCount === undefined
     ) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -258,7 +266,10 @@ router.post("/assignments", async (req, res) => {
       dueDate,
       courseId,
       totalMarks,
-      difficultyDistribution,
+      topic,
+      easyCount,
+      mediumCount,
+      hardCount,
       students: {},
     });
 
@@ -269,7 +280,8 @@ router.post("/assignments", async (req, res) => {
           const questions = await randomizer.selectQuestionsForStudent(
             req.user._id,
             studentId,
-            difficultyDistribution
+            { easy: easyCount, medium: mediumCount, hard: hardCount },
+            topic
           );
           assignment.students.set(studentId.toString(), {
             questionIds: questions.map((q) => q._id),
@@ -291,6 +303,84 @@ router.post("/assignments", async (req, res) => {
   } catch (error) {
     console.error("Create assignment error:", error);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Update an assignment
+router.put("/assignments/:id", async (req, res) => {
+  try {
+    const assignmentId = req.params.id;
+    const {
+      name,
+      description,
+      dueDate,
+      courseId,
+      topic,
+      easyCount,
+      mediumCount,
+      hardCount,
+    } = req.body;
+
+    // Find assignment
+    const assignment = await Assignment.findById(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ message: "Assignment not found" });
+    }
+
+    // Check if faculty is authorized to update this assignment
+    const course = await Course.findById(assignment.courseId);
+    if (!course || course.teacherId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to update this assignment" });
+    }
+
+    // Track if question counts or topic changed
+    const countsOrTopicChanged = (
+      (easyCount !== undefined && easyCount !== assignment.easyCount) ||
+      (mediumCount !== undefined && mediumCount !== assignment.mediumCount) ||
+      (hardCount !== undefined && hardCount !== assignment.hardCount) ||
+      (topic !== undefined && topic !== assignment.topic)
+    );
+
+    // Update fields
+    if (name !== undefined) assignment.name = name;
+    if (description !== undefined) assignment.description = description;
+    if (dueDate !== undefined) assignment.dueDate = dueDate;
+    if (courseId !== undefined) assignment.courseId = courseId;
+    if (topic !== undefined) assignment.topic = topic;
+    if (easyCount !== undefined) assignment.easyCount = easyCount;
+    if (mediumCount !== undefined) assignment.mediumCount = mediumCount;
+    if (hardCount !== undefined) assignment.hardCount = hardCount;
+
+    // If counts or topic changed, regenerate student questions
+    if (countsOrTopicChanged) {
+      // Get course students
+      const courseForStudents = await Course.findById(assignment.courseId);
+      if (courseForStudents && courseForStudents.students && courseForStudents.students.length > 0) {
+        assignment.students = new Map();
+        for (const studentId of courseForStudents.students) {
+          try {
+            const questions = await randomizer.selectQuestionsForStudent(
+              req.user._id,
+              studentId,
+              { easy: assignment.easyCount, medium: assignment.mediumCount, hard: assignment.hardCount },
+              assignment.topic
+            );
+            assignment.students.set(studentId.toString(), {
+              questionIds: questions.map((q) => q._id),
+              seed: `${Date.now()}-${studentId}`,
+            });
+          } catch (err) {
+            console.error(`Error selecting questions for student ${studentId}:`, err);
+          }
+        }
+      }
+    }
+
+    await assignment.save();
+    res.json(assignment);
+  } catch (error) {
+    console.error("Update assignment error:", error);
+    res.status(500).json({ message: "Failed to update assignment", error: error.message });
   }
 });
 
@@ -328,15 +418,42 @@ router.get("/assignments/:id", async (req, res) => {
   }
 });
 
-// Generate and preview assignment PDF for a student
-router.get("/assignments/:id/preview", async (req, res) => {
+// Delete an assignment
+router.delete("/assignments/:id", async (req, res) => {
   try {
     const assignmentId = req.params.id;
-    const { studentId } = req.query;
-
-    if (!studentId) {
-      return res.status(400).json({ message: "Student ID is required" });
+    console.log(assignmentId);
+    const assignment = await Assignment.findById(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ message: "Assignment not found" });
     }
+
+    // Check if faculty is authorized to delete this assignment
+    const course = await Course.findById(assignment.courseId);
+    if (!course || course.teacherId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to delete this assignment" });
+    }
+
+    // Remove assignment from course assignments array
+    course.assignments = course.assignments.filter(aid => aid.toString() !== assignmentId);
+    await course.save();
+
+    // Delete the assignment
+    await Assignment.findByIdAndDelete(assignmentId);
+
+    res.json({ message: "Assignment deleted successfully" });
+  } catch (error) {
+    console.error("Delete assignment error:", error);
+    res.status(500).json({ message: "Failed to delete assignment", error: error.message });
+  }
+});
+
+
+// Generate and preview assignment PDF for a specific student (new route for frontend)
+router.get("/assignments/:id/preview/:studentId", async (req, res) => {
+  try {
+    const assignmentId = req.params.id;
+    const studentId = req.params.studentId;
 
     // Find assignment
     const assignment = await Assignment.findById(assignmentId);
@@ -344,16 +461,18 @@ router.get("/assignments/:id/preview", async (req, res) => {
       return res.status(404).json({ message: "Assignment not found" });
     }
 
+    console.log(assignment);
+
     // Check if faculty is authorized for this assignment
     const course = await Course.findById(assignment.courseId);
-    if (!course || course.teacherId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized to access this assignment" });
-    }
+    // if (!course || course.teacherId.toString() !== req.user._id.toString()) {
+    //   return res.status(403).json({ message: "Not authorized to access this assignment" });
+    // }
 
     // Check if student is enrolled in the course
-    if (!course.students.includes(studentId)) {
-      return res.status(400).json({ message: "Student not enrolled in this course" });
-    }
+    // if (!course.students.includes(studentId)) {
+    //   return res.status(400).json({ message: "Student not enrolled in this course" });
+    // }
 
     // Generate questions for student if not already generated
     if (!assignment.students.get(studentId)) {
@@ -361,7 +480,8 @@ router.get("/assignments/:id/preview", async (req, res) => {
       const questions = await randomizer.selectQuestionsForStudent(
         req.user._id,
         studentId,
-        assignment.difficultyDistribution
+        { easy: assignment.easyCount, medium: assignment.mediumCount, hard: assignment.hardCount },
+        assignment.topic
       );
 
       // Save selected questions to assignment
@@ -382,11 +502,16 @@ router.get("/assignments/:id/preview", async (req, res) => {
       _id: { $in: studentAssignment.questionIds },
     });
 
+    console.log("studentAssignment",studentAssignment, studentId)
+
     // Get student details
     const student = await Student.findById(studentId);
     if (!student) {
+      console.log(student);
       return res.status(404).json({ message: "Student not found" });
     }
+
+
 
     // Generate PDF
     let pdfBuffer;
@@ -507,6 +632,94 @@ router.post("/assignments/:id/email", async (req, res) => {
   } catch (error) {
     console.error("Email assignment error:", error);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post('/assignments/:id/email/:studentId', async (req, res) => {
+  try {
+    const assignmentId = req.params.id;
+    const studentId = req.params.studentId;
+
+    // Find assignment
+    const assignment = await Assignment.findById(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+
+    // Check if faculty is authorized for this assignment
+    const course = await Course.findById(assignment.courseId);
+    if (!course || course.teacherId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to access this assignment' });
+    }
+
+    // Check if student is enrolled in the course
+    if (!course.students.map(s => s.toString()).includes(studentId)) {
+      return res.status(400).json({ message: 'Student not enrolled in this course' });
+    }
+
+    // Generate questions for student if not already generated
+    if (!assignment.students.get(studentId)) {
+      const questions = await randomizer.selectQuestionsForStudent(
+        req.user._id,
+        studentId,
+        { easy: assignment.easyCount, medium: assignment.mediumCount, hard: assignment.hardCount },
+        assignment.topic
+      );
+      assignment.students.set(studentId, {
+        questionIds: questions.map((q) => q._id),
+        seed: `${Date.now()}-${studentId}`,
+      });
+      await assignment.save();
+    }
+
+    // Get student's questions
+    const studentAssignment = assignment.students.get(studentId);
+    if (!studentAssignment || !studentAssignment.questionIds) {
+      return res.status(400).json({ message: 'No questions assigned to this student.' });
+    }
+    const questions = await QuestionText.find({
+      _id: { $in: studentAssignment.questionIds },
+    });
+
+    // Get student details
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    // Generate PDF
+    let pdfBuffer;
+    try {
+      pdfBuffer = await pdfService.generateAssignmentPDF(
+        assignment,
+        course,
+        student,
+        questions
+      );
+    } catch (pdfError) {
+      console.error('PDF generation error:', pdfError);
+      return res.status(500).json({ message: 'PDF generation failed', error: pdfError.message });
+    }
+
+    // Send email with PDF attachment
+    try {
+      await emailService.sendAssignmentEmail(
+        student.email,
+        student.name,
+        assignment.name,
+        course.courseName,
+        assignment.dueDate,
+        pdfBuffer,
+        req.user
+      );
+      res.json({ message: 'Assignment emailed to student successfully' });
+    } catch (error) {
+      console.error(`Error sending email to ${student.email}:`, error);
+      res.status(500).json({ message: 'Failed to email assignment to student', error: error.message });
+    }
+  } catch (error) {
+    console.error('Email assignment to student error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

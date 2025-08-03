@@ -61,6 +61,7 @@ router.get('/me', auth, async (req, res) => {
       email: req.user.email,
       phone: req.user.phone,
       role: req.user.role
+    , appPassword: req.user.appPassword // Add appPassword to response
     });
   } catch (error) {
     console.error('Get profile error:', error);
@@ -100,5 +101,26 @@ router.post('/change-password', auth, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// Change app password route (faculty only)
+router.post('/change-app-password', auth, async (req, res) => {
+  try {
+    const { newAppPassword } = req.body;
+    if (!newAppPassword) {
+      return res.status(400).json({ message: 'App password is required' });
+    }
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    user.appPassword = newAppPassword;
+    await user.save();
+    res.json({ message: 'App password updated successfully' });
+  } catch (error) {
+    console.error('Change app password error:', error);
+    res.status(500).json({ message: 'Failed to update app password' });
+  }
+});
+
 
 module.exports = router;

@@ -15,14 +15,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
+/* a {
   font-weight: 500;
   color:  #ffffff;
   text-decoration: inherit;
 }
 a:hover {
   color: #d8d9e6;
-}
+} */
 
 /* span{
   color: #6af4df;
