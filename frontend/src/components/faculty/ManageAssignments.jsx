@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import apiService from '../../services/api.service';
 
 const ManageAssignments = () => {
+  const navigate = useNavigate();
   const [assignments, setAssignments] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -169,6 +170,7 @@ const ManageAssignments = () => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
+
 
   return (
     <div>
@@ -387,7 +389,8 @@ const ManageAssignments = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {assignments.map((assignment) => {
-                  const course = courses.find(c => c._id === assignment.courseId) || {};
+                  // {console.log("assignment from manage assignments", assignment);}
+                  const course = courses.find(c => c._id === assignment.courseId._id) || {};
                   return (
                     <tr key={assignment._id}>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -403,12 +406,12 @@ const ManageAssignments = () => {
                         <div className="text-sm text-gray-500">{assignment.totalMarks}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link
-                          to={`/faculty/assignments/${assignment._id}`}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
+                        <button
+                          onClick={() => navigate(`/faculty/assignments/${assignment._id}`)}
+                          className='text-indigo-600 hover:text-indigo-900 mr-4 '
                         >
                           View
-                        </Link>
+                        </button>
                         <button
                           onClick={() => handlePreviewPDF(assignment._id)}
                           className="text-green-600 hover:text-green-900 mr-4"

@@ -6,11 +6,11 @@ const ManageCourses = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [upcomingAssignmentsMap, setUpcomingAssignmentsMap] = useState({});
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        setLoading(true);
         const response = await apiService.faculty.getCourses();
         setCourses(response.data);
         setError('');
@@ -25,26 +25,29 @@ const ManageCourses = () => {
     fetchCourses();
   }, []);
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
+  useEffect(() => {
+    const fetchUpcomingForCourses = async () => {
+      const map = {};
+      for (let course of courses) {
+        try {
+          const res = await apiService.faculty.getUpcomingAssignments(course._id);
+          map[course._id] = res.data.filter((a) => new Date(a.dueDate) > new Date());
+        } catch {
+          map[course._id] = [];
+        }
+      }
+      setUpcomingAssignmentsMap(map);
+    };
 
-  // Get upcoming assignments for a course
-  const getUpcomingAssignments = async (courseId) => {
-    try {
-      const response = await apiService.faculty.getUpcomingAssignments(courseId);
-      return response.data.filter(assignment => {
-        const dueDate = new Date(assignment.dueDate);
-        const now = new Date();
-        return dueDate > now;
-      });
-    } catch (error) {
-      console.error('Error fetching upcoming assignments:', error);
-      return [];
-    }
+    if (courses.length > 0) fetchUpcomingForCourses();
+  }, [courses]);
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   if (loading) {
@@ -57,79 +60,65 @@ const ManageCourses = () => {
 
   if (error) {
     return (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
-        <span className="block sm:inline">{error}</span>
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-center">
+        {error}
       </div>
     );
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Manage Courses</h1>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">My Courses</h1>
 
       {courses.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-500">
-          No courses assigned to you yet. Please contact an administrator to be assigned to courses.
+        <div className="bg-white border rounded-lg p-6 text-center text-gray-500 shadow">
+          You are not assigned to any courses yet. Contact an administrator.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6">
-          {courses.map((course) => {
-            const upcomingAssignments = getUpcomingAssignments(course._id);
-            return (
-              <div key={course._id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="text-xl font-semibold mb-2">{course.courseName}</h2>
-                      <p className="text-gray-600 mb-4">
-                        <span className="font-semibold">Students:</span> {course.students?.length || 0}
-                      </p>
-                    </div>
-                    <Link
-                      to={`/faculty/courses/${course._id}`}
-                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                    >
-                      View Details
-                    </Link>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <h3 className="text-lg font-semibold mb-2">Quick Actions</h3>
-                    <div className="flex flex-wrap gap-2">
-                      <Link
-                        to={`/faculty/questions?courseId=${course._id}`}
-                        className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm focus:outline-none focus:shadow-outline"
-                      >
-                        Manage Questions
-                      </Link>
-                      <Link
-                        to={`/faculty/assignments/new?courseId=${course._id}`}
-                        className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-1 px-3 rounded text-sm focus:outline-none focus:shadow-outline"
-                      >
-                        Create Assignment
-                      </Link>
-                    </div>
-                  </div>
-                  
-                  {upcomingAssignments.length > 0 && (
-                    <div className="mt-4">
-                      <h3 className="text-lg font-semibold mb-2">Upcoming Assignments</h3>
-                      <ul className="divide-y divide-gray-200">
-                        {upcomingAssignments.map(assignment => (
-                          <li key={assignment._id} className="py-2">
-                            <div className="flex justify-between">
-                              <span className="font-medium">{assignment.name}</span>
-                              <span className="text-gray-500">Due: {formatDate(assignment.dueDate)}</span>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {courses.map((course) => (
+            <div key={course._id} className="bg-white shadow rounded-2xl p-5 border border-gray-100">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-800">{course.courseName}</h2>
+                  <p className="text-gray-500 text-sm">
+                    Students Enrolled: <span className="font-medium">{course.students?.length || 0}</span>
+                  </p>
                 </div>
+                {console.log("course from coursepage", course)}
+                <Link
+                  to={`/faculty/courses/${course._id}`}
+                  className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
+                >
+                  View
+                </Link>
               </div>
-            );
-          })}
+
+              <div className="mb-3">
+                <h3 className="text-sm font-medium text-gray-700 mb-1">Quick Actions</h3>
+                <Link
+                  to={`/faculty/assignments/new?courseId=${course._id}`}
+                  className="text-sm bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md"
+                >
+                  + Create Assignment
+                </Link>
+              </div>
+
+              {upcomingAssignmentsMap[course._id]?.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Upcoming Assignments</h3>
+                  <ul className="text-sm divide-y divide-gray-200">
+                    {upcomingAssignmentsMap[course._id].map((assignment) => (
+                      <li key={assignment._id} className="py-2 flex justify-between">
+                        <span className="text-gray-800 font-medium">{assignment.name}</span>
+                        <span className="text-gray-500">Due: {formatDate(assignment.dueDate)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>

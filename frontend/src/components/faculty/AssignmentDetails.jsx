@@ -19,7 +19,6 @@ const AssignmentDetails = () => {
         // Fetch assignment details
         const assignmentRes = await apiService.faculty.getAssignment(id);
         setAssignment(assignmentRes.data);
-        
         // Fetch course details
         if (assignmentRes.data.courseId) {
           const courseRes = await apiService.faculty.getCourse(assignmentRes.data.courseId);
@@ -194,7 +193,8 @@ const AssignmentDetails = () => {
       {/* Students List */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <h2 className="text-xl font-semibold p-6 border-b">Students</h2>
-        
+        {console.log('Students:', students)}
+        {console.log('Assignment:', assignment)}
         {students.length === 0 ? (
           <div className="p-6 text-center text-gray-500">No students assigned to this course</div>
         ) : (

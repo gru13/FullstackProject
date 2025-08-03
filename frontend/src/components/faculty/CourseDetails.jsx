@@ -4,6 +4,7 @@ import apiService from '../../services/api.service';
 
 const CourseDetails = () => {
   const { id } = useParams();
+  console.log('CourseDetails param id:', id);
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [assignments, setAssignments] = useState([]);
@@ -17,14 +18,13 @@ const CourseDetails = () => {
         setLoading(true);
         // Fetch course details
         const courseRes = await apiService.faculty.getCourse(id);
+        console.log('CourseDetails API response:', courseRes);
         setCourse(courseRes.data);
         setStudents(courseRes.data.students || []);
-        
         // Fetch assignments for this course
         const assignmentsRes = await apiService.faculty.getAssignments();
         const courseAssignments = assignmentsRes.data.filter(a => a.courseId === id);
         setAssignments(courseAssignments);
-        
         setError('');
       } catch (err) {
         console.error('Error fetching course details:', err);
@@ -96,7 +96,7 @@ const CourseDetails = () => {
           </div>
           <div>
             <button
-              onClick={() => navigate('/faculty/assignments/new', { state: { courseId: id } })}
+              onClick={() => navigate('/faculty/assignments', { state: { courseId: id } })}
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             >
               Create New Assignment

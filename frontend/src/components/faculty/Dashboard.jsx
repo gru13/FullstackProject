@@ -199,7 +199,7 @@ const FacultyDashboard = () => {
             <h3 className="font-semibold text-lg mb-2">Manage Assignments</h3>
             <p className="text-gray-600">Create and distribute assignments</p>
           </a>
-          <a href="/faculty/assignments/new" className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+          <a href="/faculty/assignments" className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow">
             <h3 className="font-semibold text-lg mb-2">Create Assignment</h3>
             <p className="text-gray-600">Generate a new assignment</p>
           </a>
