@@ -11,12 +11,10 @@ const ManageStudents = () => {
     rollNumber: '',
     phone: ''
   });
-  const [formError, setFormError] = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
+  const [formMessage, setFormMessage] = useState({ type: '', message: '' });
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
 
-  // Fetch students data
   const fetchStudents = async () => {
     try {
       setLoading(true);
@@ -35,51 +33,39 @@ const ManageStudents = () => {
     fetchStudents();
   }, []);
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+    setFormData({ ...formData, [name]: value });
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormError('');
-    setFormSuccess('');
+    setFormMessage({ type: '', message: '' });
 
-    // Validate form
     if (!formData.name || !formData.email || !formData.rollNumber) {
-      setFormError('All fields are required');
+      setFormMessage({ type: 'error', message: 'All fields are required' });
       return;
     }
 
     try {
       if (editMode) {
         await apiService.admin.updateStudent(editId, formData);
-        setFormSuccess('Student updated successfully');
+        setFormMessage({ type: 'success', message: 'Student updated successfully' });
         setEditMode(false);
         setEditId(null);
       } else {
         await apiService.admin.createStudent(formData);
-        setFormSuccess('Student created successfully');
+        setFormMessage({ type: 'success', message: 'Student created successfully' });
       }
-      
-      setFormData({
-        name: '',
-        email: '',
-        rollNumber: ''
-      });
-      fetchStudents(); // Refresh students list
+
+      setFormData({ name: '', email: '', rollNumber: '', phone: '' });
+      fetchStudents();
     } catch (err) {
-      console.error(editMode ? 'Error updating student:' : 'Error creating student:', err);
-      setFormError(err.response?.data?.message || `Failed to ${editMode ? 'update' : 'create'} student`);
+      console.error('Error saving student:', err);
+      setFormMessage({ type: 'error', message: 'Failed to save student' });
     }
   };
 
-  // Handle edit button click
   const handleEdit = (student) => {
     setEditMode(true);
     setEditId(student._id);
@@ -92,16 +78,15 @@ const ManageStudents = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Handle student deletion
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this student?')) {
       try {
         await apiService.admin.deleteStudent(id);
-        setFormSuccess('Student deleted successfully');
-        fetchStudents(); // Refresh students list
+        setFormMessage({ type: 'success', message: 'Student deleted successfully' });
+        fetchStudents();
       } catch (err) {
         console.error('Error deleting student:', err);
-        setFormError(err.response?.data?.message || 'Failed to delete student');
+        setFormMessage({ type: 'error', message: 'Failed to delete student' });
       }
     }
   };
@@ -113,19 +98,16 @@ const ManageStudents = () => {
       {/* Add Student Form */}
       <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
         <h2 className="text-2xl font-semibold mb-6 text-gray-700">{editMode ? 'Edit Student' : 'Add New Student'}</h2>
-        
-        {formError && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-            <p>{formError}</p>
+
+        {formMessage.message && (
+          <div
+            className={`p-4 mb-6 border-l-4 ${formMessage.type === 'error' ? 'bg-red-100 border-red-500 text-red-700' : 'bg-green-100 border-green-500 text-green-700'}`}
+            role="alert"
+          >
+            <p>{formMessage.message}</p>
           </div>
         )}
-        
-        {formSuccess && (
-          <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
-            <p>{formSuccess}</p>
-          </div>
-        )}
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div>
@@ -143,7 +125,7 @@ const ManageStudents = () => {
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
                 Email
@@ -159,7 +141,7 @@ const ManageStudents = () => {
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="rollNumber">
                 Roll Number
@@ -176,12 +158,13 @@ const ManageStudents = () => {
                 disabled={editMode} // Disable roll number editing to prevent conflicts
               />
             </div>
-            <div className="mb-4">
+
+            <div>
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="phone">
                 Phone Number
               </label>
               <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="shadow-sm appearance-none border border-gray-300 rounded-md w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
                 id="phone"
                 type="text"
                 name="phone"
@@ -191,7 +174,7 @@ const ManageStudents = () => {
               />
             </div>
           </div>
-          
+
           <div className="flex items-center mt-8">
             <button
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 shadow-md"
@@ -206,11 +189,7 @@ const ManageStudents = () => {
                 onClick={() => {
                   setEditMode(false);
                   setEditId(null);
-                  setFormData({
-                    name: '',
-                    email: '',
-                    rollNumber: ''
-                  });
+                  setFormData({ name: '', email: '', rollNumber: '', phone: '' });
                 }}
               >
                 Cancel
@@ -223,7 +202,7 @@ const ManageStudents = () => {
       {/* Students List */}
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <h2 className="text-2xl font-semibold p-6 border-b border-gray-200 bg-gray-50 text-gray-700">Students List</h2>
-        
+
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>

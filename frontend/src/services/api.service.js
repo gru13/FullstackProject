@@ -98,29 +98,6 @@ const apiService = {
     updateAssignment: (id, assignmentData) => apiClient.put(`/faculty/assignments/${id}`, assignmentData)
   },
   
-  // Student endpoints
-  student: {
-    // Courses
-    getCourses: () => apiClient.get('/student/courses'),
-    getCourseById: (courseId) => apiClient.get(`/student/courses/${courseId}`),
-    
-    // Assignments
-    getAssignments: () => apiClient.get('/student/assignments'),
-    getAssignmentsByCourse: (courseId) => apiClient.get(`/student/assignments?courseId=${courseId}`),
-    getAssignmentById: (assignmentId) => apiClient.get(`/student/assignments/${assignmentId}`),
-    
-    // PDF preview
-    previewAssignmentPdf: (assignmentId) => apiClient.get(`/student/assignments/${assignmentId}/preview`, { responseType: 'blob' }),
-    
-    // Submission functionality
-    submitAssignment: (assignmentId, formData) => apiClient.post(`/student/assignments/${assignmentId}/submit`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    }),
-    getSubmission: (assignmentId) => apiClient.get(`/student/assignments/${assignmentId}/submission`)
-  },
-  
   // Auth endpoints
   auth: {
     login: (credentials) => apiClient.post('/auth/login', credentials),

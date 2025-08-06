@@ -1,4 +1,5 @@
 const express = require('express');
+const { StatusCodes } = require('http-status-codes');
 const User = require('../models/User');
 const Student = require('../models/Student');
 const Course = require('../models/Course');
@@ -17,13 +18,13 @@ router.post('/users', async (req, res) => {
 
     // Validate input
     if (!name || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'All fields are required' });
     }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'User already exists' });
     }
 
     // Create new user with faculty role
@@ -37,7 +38,7 @@ router.post('/users', async (req, res) => {
 
     await user.save();
 
-    res.status(201).json({
+    res.status(StatusCodes.CREATED).json({
       id: user._id,
       name: user.name,
       email: user.email,
@@ -46,7 +47,7 @@ router.post('/users', async (req, res) => {
     });
   } catch (error) {
     console.error('Create user error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -57,7 +58,7 @@ router.get('/users', async (req, res) => {
     res.json(users);
   } catch (error) {
     console.error('Get users error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -69,24 +70,24 @@ router.put('/users/:id', async (req, res) => {
 
     // Validate input
     if (!name || !email) {
-      return res.status(400).json({ message: 'Name and email are required' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Name and email are required' });
     }
 
     // Check if user exists
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ message: 'User not found' });
     }
 
     // Check if user is faculty
     if (user.role !== 'faculty') {
-      return res.status(400).json({ message: 'Can only update faculty users' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Can only update faculty users' });
     }
 
     // Check if email is already in use by another user
     const existingUser = await User.findOne({ email, _id: { $ne: userId } });
     if (existingUser) {
-      return res.status(400).json({ message: 'Email is already in use' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Email is already in use' });
     }
 
     // Update user
@@ -104,7 +105,7 @@ router.put('/users/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Update user error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -116,12 +117,12 @@ router.delete('/users/:id', async (req, res) => {
     // Check if user exists
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ message: 'User not found' });
     }
     
     // Check if user is faculty
     if (user.role !== 'faculty') {
-      return res.status(400).json({ message: 'Can only delete faculty users' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Can only delete faculty users' });
     }
     
     await User.findByIdAndDelete(userId);
@@ -129,7 +130,7 @@ router.delete('/users/:id', async (req, res) => {
     res.json({ message: 'Faculty user deleted successfully' });
   } catch (error) {
     console.error('Delete user error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -140,13 +141,13 @@ router.post('/students', async (req, res) => {
 
     // Validate input
     if (!rollNumber || !name || !email) {
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'All fields are required' });
     }
 
     // Check if student already exists
     const existingStudent = await Student.findOne({ $or: [{ rollNumber }, { email }] });
     if (existingStudent) {
-      return res.status(400).json({ message: 'Student already exists' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Student already exists' });
     }
 
     // Create new student
@@ -158,10 +159,10 @@ router.post('/students', async (req, res) => {
 
     await student.save();
 
-    res.status(201).json(student);
+    res.status(StatusCodes.CREATED).json(student);
   } catch (error) {
     console.error('Create student error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -172,7 +173,7 @@ router.get('/students', async (req, res) => {
     res.json(students);
   } catch (error) {
     console.error('Get students error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -184,13 +185,13 @@ router.put('/students/:id', async (req, res) => {
 
     // Validate input
     if (!rollNumber || !name || !email) {
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'All fields are required' });
     }
 
     // Check if student exists
     const student = await Student.findById(studentId);
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ message: 'Student not found' });
     }
 
     // Check if rollNumber or email is already in use by another student
@@ -199,7 +200,7 @@ router.put('/students/:id', async (req, res) => {
       _id: { $ne: studentId }
     });
     if (existingStudent) {
-      return res.status(400).json({ message: 'Roll number or email is already in use' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Roll number or email is already in use' });
     }
 
     // Update student
@@ -211,7 +212,7 @@ router.put('/students/:id', async (req, res) => {
     res.json(student);
   } catch (error) {
     console.error('Update student error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -223,7 +224,7 @@ router.delete('/students/:id', async (req, res) => {
     // Check if student exists
     const student = await Student.findById(studentId);
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ message: 'Student not found' });
     }
     
     await Student.findByIdAndDelete(studentId);
@@ -231,7 +232,7 @@ router.delete('/students/:id', async (req, res) => {
     res.json({ message: 'Student deleted successfully' });
   } catch (error) {
     console.error('Delete student error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -242,13 +243,13 @@ router.post('/courses', async (req, res) => {
 
     // Validate input
     if (!courseName || !teacherId) {
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'All fields are required' });
     }
 
     // Check if teacher exists and is faculty
     const teacher = await User.findById(teacherId);
     if (!teacher || teacher.role !== 'faculty') {
-      return res.status(400).json({ message: 'Invalid teacher ID' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Invalid teacher ID' });
     }
 
     // Create new course
@@ -261,10 +262,10 @@ router.post('/courses', async (req, res) => {
 
     await course.save();
 
-    res.status(201).json(course);
+    res.status(StatusCodes.CREATED).json(course);
   } catch (error) {
     console.error('Create course error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -277,7 +278,7 @@ router.get('/courses', async (req, res) => {
     res.json(courses);
   } catch (error) {
     console.error('Get courses error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -290,13 +291,13 @@ router.get('/courses/:id', async (req, res) => {
       .populate('students', 'rollNumber name email');
     
     if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ message: 'Course not found' });
     }
     
     res.json(course);
   } catch (error) {
     console.error('Get course error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -308,13 +309,13 @@ router.put('/courses/:id', async (req, res) => {
 
     // Validate input
     if (!courseName) {
-      return res.status(400).json({ message: 'Course name is required' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Course name is required' });
     }
 
     // Check if course exists
     const course = await Course.findById(courseId);
     if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ message: 'Course not found' });
     }
 
     // Update course
@@ -324,7 +325,7 @@ router.put('/courses/:id', async (req, res) => {
     res.json(course);
   } catch (error) {
     console.error('Update course error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -336,7 +337,7 @@ router.delete('/courses/:id', async (req, res) => {
     // Check if course exists
     const course = await Course.findById(courseId);
     if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ message: 'Course not found' });
     }
     
     await Course.findByIdAndDelete(courseId);
@@ -344,7 +345,7 @@ router.delete('/courses/:id', async (req, res) => {
     res.json({ message: 'Course deleted successfully' });
   } catch (error) {
     console.error('Delete course error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -356,19 +357,19 @@ router.put('/courses/:id/assign-faculty', async (req, res) => {
 
     // Validate input
     if (!teacherId) {
-      return res.status(400).json({ message: 'Teacher ID is required' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Teacher ID is required' });
     }
 
     // Check if course exists
     const course = await Course.findById(courseId);
     if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ message: 'Course not found' });
     }
 
     // Check if teacher exists and is faculty
     const teacher = await User.findById(teacherId);
     if (!teacher || teacher.role !== 'faculty') {
-      return res.status(400).json({ message: 'Invalid teacher ID' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Invalid teacher ID' });
     }
 
     // Update course
@@ -378,7 +379,7 @@ router.put('/courses/:id/assign-faculty', async (req, res) => {
     res.json(course);
   } catch (error) {
     console.error('Assign faculty error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -390,19 +391,19 @@ router.put('/courses/:id/assign-students', async (req, res) => {
 
     // Validate input
     if (!studentIds || !Array.isArray(studentIds)) {
-      return res.status(400).json({ message: 'Student IDs array is required' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Student IDs array is required' });
     }
 
     // Check if course exists
     const course = await Course.findById(courseId);
     if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
+      return res.status(StatusCodes.NOT_FOUND).json({ message: 'Course not found' });
     }
 
     // Check if all students exist
     const students = await Student.find({ _id: { $in: studentIds } });
     if (students.length !== studentIds.length) {
-      return res.status(400).json({ message: 'One or more student IDs are invalid' });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'One or more student IDs are invalid' });
     }
 
     // Update course
@@ -412,7 +413,7 @@ router.put('/courses/:id/assign-students', async (req, res) => {
     res.json(course);
   } catch (error) {
     console.error('Assign students error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 
@@ -431,7 +432,7 @@ router.get('/assignments', async (req, res) => {
     res.json(assignments);
   } catch (error) {
     console.error('Get assignments error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
   }
 });
 

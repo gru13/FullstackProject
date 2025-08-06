@@ -2,37 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiService from '../../services/api.service';
 
-const StatCard = ({ title, value, icon, color }) => {
-  return (
-    <div className={`bg-${color}-900/10 p-6 rounded-xl border border-${color}-900/20 backdrop-blur-lg`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className={`text-${color}-600 text-sm font-medium`}>{title}</h3>
-          <p className="text-3xl font-bold mt-2">{value}</p>
-        </div>
-        <div className={`p-3 rounded-full bg-${color}-500/10 text-${color}-500`}>
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ActionCard = ({ title, description, link, icon }) => {
-  return (
-    <Link to={link} className="block p-6 rounded-xl bg-gray-800/50 border border-gray-700/50 hover:bg-gray-800/70 transition duration-300">
-      <div className="flex items-center space-x-4">
-        <div className="p-3 rounded-full bg-blue-500/10 text-blue-500">
-          {icon}
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-white">{title}</h3>
-          <p className="text-gray-400 mt-1">{description}</p>
-        </div>
-      </div>
-    </Link>
-  );
-};
 
 const FacultyDashboard = () => {
   const [courses, setCourses] = useState([]);

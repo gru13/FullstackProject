@@ -11,24 +11,12 @@ import ManageQuestions from './components/faculty/ManageQuestions';
 import ManageAssignments from './components/faculty/ManageAssignments';
 import AssignmentDetails from './components/faculty/AssignmentDetails';
 import FacultyCourseDetails from './components/faculty/CourseDetails';
-import Courses from './components/faculty/Courses';
 import FacultyManageCourses from './components/faculty/ManageCourses';
-import Navbar from './components/common/Navbar';
 import Unauthorized from './components/common/Unauthorized';
 import Profile from './components/faculty/Profile';
 import authService from './services/auth.service';
 
 import { Link, useNavigate } from 'react-router-dom';
-
-// Student Components
-import StudentDashboard from './components/student/Dashboard';
-import StudentCourses from './components/student/Courses';
-import StudentCourseDetails from './components/student/CourseDetails';
-import StudentAssignments from './components/student/Assignments';
-import StudentAssignmentDetails from './components/student/AssignmentDetails';
-import SubmitAssignment from './components/student/SubmitAssignment';
-import SubmissionView from './components/student/SubmissionView';
-
 
 
 // Admin Layout Component
@@ -155,38 +143,6 @@ const FacultyLayout = () => {
   );
 };
 
-// Student Layout Component
-const StudentLayout = () => {
-  return (
-    <div>
-      {/* <Navbar /> */}
-      <div className="flex h-screen bg-gray-100">
-        {/* Sidebar */}
-        <div className="w-64 bg-gray-800 text-white">
-          <div className="p-4 font-bold text-xl">Student Panel</div>
-          <nav className="mt-6">
-            <a href="/student" className="block py-2 px-4 hover:bg-gray-700">Dashboard</a>
-            <a href="/student/courses" className="block py-2 px-4 hover:bg-gray-700">My Courses</a>
-            <a href="/student/assignments" className="block py-2 px-4 hover:bg-gray-700">My Assignments</a>
-          </nav>
-          <div className="bottom-0 w-full p-4">
-            <button
-              onClick={authService.logout}
-              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm font-medium w-full"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-        
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto p-8">
-          <Outlet />
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -261,25 +217,9 @@ function App() {
           <Route path="questions" element={<ManageQuestions />} />
           <Route path="assignments" element={<ManageAssignments />} />
           <Route path="assignments/:id" element={<AssignmentDetails />} />
-          <Route path="courses" element={<Courses />} />
           <Route path="courses/manage" element={<FacultyManageCourses />} />
           <Route path="courses/:id" element={<FacultyCourseDetails />} />
           <Route path="profile" element={<Profile />} />
-        </Route>
-        
-        {/* Student Routes */}
-        <Route path="/student" element={
-          <ProtectedRoute allowedRoles={['student']}>
-            <StudentLayout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<StudentDashboard />} />
-          <Route path="courses" element={<StudentCourses />} />
-          <Route path="courses/:id" element={<StudentCourseDetails />} />
-          <Route path="assignments" element={<StudentAssignments />} />
-          <Route path="assignments/:id" element={<StudentAssignmentDetails />} />
-          <Route path="assignments/:id/submit" element={<SubmitAssignment />} />
-          <Route path="assignments/:id/submission" element={<SubmissionView />} />
         </Route>
         
         {/* Redirect root to login */}
