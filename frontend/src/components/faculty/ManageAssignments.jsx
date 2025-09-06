@@ -6,6 +6,7 @@ const ManageAssignments = () => {
   const navigate = useNavigate();
   const [assignments, setAssignments] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [allQuestions, setAllQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -20,21 +21,28 @@ const ManageAssignments = () => {
     hardCount: 0
   });
   const [topics, setTopics] = useState([]);
+  const [availableCounts, setAvailableCounts] = useState({ easy: 0, medium: 0, hard: 0 });
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [currentAssignmentId, setCurrentAssignmentId] = useState(null);
 
-  // Fetch assignments and courses
+  // Fetch assignments, courses, and questions
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [assignmentsRes, coursesRes] = await Promise.all([
+      const [assignmentsRes, coursesRes, questionsRes] = await Promise.all([
         apiService.faculty.getAssignments(),
-        apiService.faculty.getCourses()
+        apiService.faculty.getCourses(),
+        apiService.faculty.getQuestions()
       ]);
       setAssignments(assignmentsRes.data);
       setCourses(coursesRes.data);
+      setAllQuestions(questionsRes.data);
+
+      const uniqueTopics = Array.from(new Set(questionsRes.data.map(q => q.topic).filter(Boolean)));
+      setTopics(uniqueTopics);
+      
       setError('');
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -46,19 +54,23 @@ const ManageAssignments = () => {
 
   useEffect(() => {
     fetchData();
-    // Fetch topics from questions
-    const fetchTopics = async () => {
-      try {
-        const response = await apiService.faculty.getQuestions();
-        const uniqueTopics = Array.from(new Set(response.data.map(q => q.topic).filter(Boolean)));
-        setTopics(uniqueTopics);
-      } catch (err) {
-        console.error('Error fetching topics:', err);
-        setTopics([]);
-      }
-    };
-    fetchTopics();
   }, []);
+
+  // Update available question counts when topic changes
+  useEffect(() => {
+    if (formData.topic) {
+      const topicQuestions = allQuestions.filter(q => q.topic === formData.topic);
+      const counts = {
+        easy: topicQuestions.filter(q => q.difficulty.toLowerCase() === 'easy').length,
+        medium: topicQuestions.filter(q => q.difficulty.toLowerCase() === 'medium').length,
+        hard: topicQuestions.filter(q => q.difficulty.toLowerCase() === 'hard').length,
+      };
+      setAvailableCounts(counts);
+    } else {
+      setAvailableCounts({ easy: 0, medium: 0, hard: 0 });
+    }
+  }, [formData.topic, allQuestions]);
+
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -92,6 +104,14 @@ const ManageAssignments = () => {
     }
     if (formData.easyCount + formData.mediumCount + formData.hardCount === 0) {
       setFormError('Specify at least one question');
+      return;
+    }
+    if (
+      formData.easyCount > availableCounts.easy ||
+      formData.mediumCount > availableCounts.medium ||
+      formData.hardCount > availableCounts.hard
+    ) {
+      setFormError('Cannot request more questions than available for the selected topic and difficulty.');
       return;
     }
 
@@ -154,6 +174,16 @@ const ManageAssignments = () => {
     setFormError('');
     setFormSuccess('');
     if (!currentAssignmentId) return;
+
+    if (
+      formData.easyCount > availableCounts.easy ||
+      formData.mediumCount > availableCounts.medium ||
+      formData.hardCount > availableCounts.hard
+    ) {
+      setFormError('Cannot request more questions than available for the selected topic and difficulty.');
+      return;
+    }
+    
     try {
       await apiService.faculty.updateAssignment(currentAssignmentId, formData);
       setFormSuccess('Assignment updated successfully');
@@ -309,7 +339,7 @@ const ManageAssignments = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-gray-700 text-sm mb-1" htmlFor="easyCount">
-                  Easy
+                  Easy ({availableCounts.easy} available)
                 </label>
                 <input
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
@@ -317,6 +347,7 @@ const ManageAssignments = () => {
                   type="number"
                   name="easyCount"
                   min="0"
+                  max={availableCounts.easy}
                   value={formData.easyCount}
                   onChange={handleChange}
                   required
@@ -324,7 +355,7 @@ const ManageAssignments = () => {
               </div>
               <div>
                 <label className="block text-gray-700 text-sm mb-1" htmlFor="mediumCount">
-                  Medium
+                  Medium ({availableCounts.medium} available)
                 </label>
                 <input
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
@@ -332,6 +363,7 @@ const ManageAssignments = () => {
                   type="number"
                   name="mediumCount"
                   min="0"
+                  max={availableCounts.medium}
                   value={formData.mediumCount}
                   onChange={handleChange}
                   required
@@ -339,7 +371,7 @@ const ManageAssignments = () => {
               </div>
               <div>
                 <label className="block text-gray-700 text-sm mb-1" htmlFor="hardCount">
-                  Hard
+                  Hard ({availableCounts.hard} available)
                 </label>
                 <input
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
@@ -347,6 +379,7 @@ const ManageAssignments = () => {
                   type="number"
                   name="hardCount"
                   min="0"
+                  max={availableCounts.hard}
                   value={formData.hardCount}
                   onChange={handleChange}
                   required

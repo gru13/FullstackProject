@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'react-toastify';
 import authService from './auth.service';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -29,11 +30,27 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle 401 Unauthorized errors (token expired, etc.)
-    if (error.response && error.response.status === 401) {
-      authService.logout();
-      window.location.href = '/login';
+    if (error.response) {
+      // Handle 401 Unauthorized errors (token expired, etc.)
+      if (error.response.status === 401) {
+        authService.logout();
+        window.location.href = '/login';
+      }
+      
+      // Show toast notification for other errors
+      if (error.response.data && error.response.data.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error(`Error: ${error.response.statusText}`);
+      }
+    } else if (error.request) {
+      // The request was made but no response was received
+      toast.error('Network error, please try again.');
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      toast.error(error.message);
     }
+    
     return Promise.reject(error);
   }
 );
